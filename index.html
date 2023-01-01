@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>String Seeker</title>
+
+    <style>
+        .input-block {
+            display: block;
+            margin-bottom: 25px;
+        }
+        #result {
+            margin-top: 25px;
+        }
+        #result ul {
+            list-style: none;
+            padding: 0 0 15px;
+            border-bottom: 1px solid #333;
+        }
+        #result ul:last-child {
+            border-width: 0;
+        }
+        #result li {
+            margin-bottom: 10px;
+        }
+        #result li .highlight {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-block">
+        <label for="string">String to search:</label><br />
+        <input type="text" id="string" name="string" />
+    </div>
+    <div class="input-block">
+        <label for="files">Select file(s):</label><br />
+        <input type="file" id="files" name="files" accept=".txt" multiple />
+    </div>
+
+    <button id="search">Search</button>
+
+    <div id="result"></div>
+</body>
+<footer>
+    <script>
+        const resultContainer = document.getElementById("result");
+
+        const readFileAsync = (file) => {
+            return new Promise((resolve, reject) => {
+                let reader = new FileReader();
+
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            })
+        }
+
+        const arrayBufferToString = (arrayBuffer, decoderType = "utf-8") => {
+            const decoder = new TextDecoder(decoderType);
+            return decoder.decode(arrayBuffer);
+        }
+
+        const processFile = async (stringToSearch, file) => {
+            try {
+                const arrayBuffer = await readFileAsync(file);
+                const fileContent = arrayBufferToString(arrayBuffer);
+                const occurrences = getOccurrencies(stringToSearch, fileContent);
+                const outputHTML = generateOutputHTML(stringToSearch, file, occurrences);
+                appendOutputContent(outputHTML);
+            } catch(err) {
+                alert("Error! Check console log for more info about it!")
+                console.log(err);
+            }
+        }
+
+        const getOccurrencies = (stringToSearch, fileContent) => {
+            const splittedFileContent = fileContent.split(/\r?\n/);
+
+            filteredFileContent = splittedFileContent
+                .map((row, index) => { return {content: row, index: index+1 }})
+                .filter(row => row.content.indexOf(stringToSearch) != -1);
+
+            return filteredFileContent;
+        }
+
+        const highlightOccurrence = (stringToSearch, occurrenceRow) => {
+            var index = occurrenceRow.indexOf(stringToSearch);
+
+            const highlightedOccurrence = `${occurrenceRow.substring(0, index)}<span class='highlight'>${occurrenceRow.substring(index, index + stringToSearch.length)}</span>${occurrenceRow.substring(index + stringToSearch.length)}`;
+            
+            return highlightedOccurrence;
+        }
+
+        const generateOutputHTML = (stringToSearch, file, occurrences) => {
+            const fileName = file.name;
+
+            const mappedOccurrences = occurrences.map(occurrence => `<li>Row ${occurrence.index}: ${highlightOccurrence(stringToSearch, occurrence.content)}</li>`).join("");
+
+            const occurrencesList = mappedOccurrences.length ? mappedOccurrences : `<li>Zero matches!</li>`;
+
+            return `
+            <h2>${fileName}</h2>
+            <ul>${occurrencesList}</ul>
+            `;
+        }
+
+        const appendOutputContent = (outputContent) => {
+            result.innerHTML += outputContent;
+        }
+
+        const inputStringElement = document.getElementById("string");
+        const inputFilesElement = document.getElementById("files");
+        const searchButton = document.getElementById("search");
+
+        searchButton.addEventListener("click", (e) => {
+            // Get current string to search
+            const inputString = inputStringElement.value;
+
+            // Get current file(s)
+            const inputFileList = inputFilesElement.files;
+
+            // Empty result container
+            resultContainer.innerText = "";
+
+            if(inputFileList.length) {
+                for(let index = 0; index < inputFileList.length; index++) {
+                    processFile(inputString, inputFileList[index]);
+                }
+            }
+        });
+    </script>
+</footer>
+</html>
