@@ -90,7 +90,7 @@
         }
 
         const highlightOccurrence = (stringToSearch, occurrenceRow) => {
-            var index = occurrenceRow.indexOf(stringToSearch);
+            const index = occurrenceRow.indexOf(stringToSearch);
 
             const highlightedOccurrence = `${occurrenceRow.substring(0, index)}<span class='highlight'>${occurrenceRow.substring(index, index + stringToSearch.length)}</span>${occurrenceRow.substring(index + stringToSearch.length)}`;
             
